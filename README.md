@@ -7,13 +7,9 @@ creating a config file in /etc/conf.d/
 - Fix paths
 - Package up
 - create /etc/conf.d/
-- Display start/stop scripts and what runlevels they are configured to start on
 - improve start/stop script template
-- insserv integration stuff
 - Additional insserv integration, view start order, etc
 - support --make-pidfile properly
-- Warning for overwrite of current script
-- update function - read from config
-- update-rc.d integration
+- update function - read from config - check for changes before updating
 - man page
 - detailed example usage, both for -h and the man page

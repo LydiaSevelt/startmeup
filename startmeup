@@ -30,7 +30,9 @@ Remember to use single quotes to preserve literal strings
 -f  Force overwrite of existing script/config files
 -U  Full path to daemon binary - Update
 	Some config file changes require running update to push
-	changes to the init script
+	changes to the init script. Also checks templates and will
+	update script and config file if newer versions are available.
+	Updating from templates requires -f
 
 -n  "Provides" name
 	Default is the binary name
@@ -175,7 +177,7 @@ if [ -z $BINARY ]; then
 	exit 1
 fi
 
-# I should probably add input validation at some point.
+# I should probably add input validation at some point, or at least error checking.
 
 SCRIPTNAME=`basename $BINARY`
 
