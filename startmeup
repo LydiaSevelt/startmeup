@@ -51,8 +51,33 @@ Remember to use single quotes to preserve literal strings
 -Q  Required shutdown services
 	Remember to use single quotes to preserve the literal string
 	Default is '\$network \$local_fs \$remote_fs'
+
+Examples:
+
+	For most people the defaults will be sufficient:
+
+startmeup -b /usr/sbin/thingd
+
+	Many people will want to add the new deamon to startup at the same time
+
+startmeup -b /usr/sbin/thingd -e
+
+	Some daemons create a pidfile when they run, use that for added reliability
+
+startmeup -b /usr/sbin/thingd -e -p /var/run/thingd.pid
+
+	Pass some command line options to the daemon and add a short description
+
+startmeup -b /usr/sbin/thingd -e -p /var/run/thingd.pid -o "-v --debug=2 -e" -E "The thingd daemon for things"
+
+	Add additional runtime requirements and only change the default runlevels to start daemon
+	Don't forget the single quotes so that the requirments are treated as literal strings and not interpreted as variables
+
+startmeup -b /usr/sbin/thingd -e -p /var/run/thingd.pid -o "-v --debug=2 -e" -E "The thingd daemon for things" -s "5" -q '\$network \$local_fs \$remote_fs \$syslog libvirtd sshd'
+
+
 EOF
-# add examples to this help
+# make these examples a bit neater when being displayed, especially on smaller terminals.
 }
 
 # set defaults
@@ -110,7 +135,7 @@ while getopts "hfeb:n:c:p:r:o:E:s:S:q:Q:d:D:" opt; do
 			# optional command line options
 			CMDLINEOPTS=$OPTARG
 		;;
-		e)
+		E)
 			# optional description
 			DESCRIPTION=$OPTARG
 		;;
@@ -188,6 +213,8 @@ envsubst << 'EOF' > /etc/init.d/${SCRIPTNAME}
 ### END INIT INFO
 EOF
 
+# Wouldn't some error checking be cool? Why it certainly would.
+
 # copy template into place
 # paths are wrong, fix later
 cat template.startstop >> /etc/init.d/${SCRIPTNAME}
@@ -201,5 +228,5 @@ envsubst < template.conf >> /etc/conf.d/${SCRIPTNAME}.conf
 
 # add to default runlevels if -e
 if [ ! -z $ADDONINSTALL ]; then
-	eval update-rc.d enable ${SCRIPTNAME}
+	eval update-rc.d ${SCRIPTNAME} defaults
 fi
