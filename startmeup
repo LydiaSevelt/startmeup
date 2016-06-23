@@ -27,6 +27,11 @@ Remember to use single quotes to preserve literal strings
 
 -e  Enable newly installed start/stop script in default runlevels
 	Executes "update-rc.d enable" for new script after install
+-f  Force overwrite of existing script/config files
+-U  Full path to daemon binary - Update
+	Some config file changes require running update to push
+	changes to the init script
+
 -n  "Provides" name
 	Default is the binary name
 -c  Full path to config file
@@ -46,11 +51,8 @@ Remember to use single quotes to preserve literal strings
 -Q  Required shutdown services
 	Remember to use single quotes to preserve the literal string
 	Default is '\$network \$local_fs \$remote_fs'
-
--U  Full path to daemon binary - Update
-	Some config file changes require running update to push
-	changes to the init script
 EOF
+# add examples to this help
 }
 
 # set defaults
@@ -68,15 +70,21 @@ export SHOULD_STOP=""
 export REQ_START='$network $local_fs $remote_fs'
 export REQ_STOP='$network $local_fs $remote_fs'
 ADDONINSTALL=""
+FORCE=""
 
-while getopts "heb:n:c:p:r:o:E:s:S:q:Q:d:D:" opt; do
+while getopts "hfeb:n:c:p:r:o:E:s:S:q:Q:d:D:" opt; do
 	case "$opt" in
 		h)
 			print_help
 			exit 0
 		;;
 		e)
+			# anything but zero length string
 			ADDONINSTALL=1
+		;;
+		f)
+			# anything but zero length string
+			FORCE=1
 		;;
 		b)
 			# full path to binary
@@ -144,6 +152,18 @@ fi
 
 # I should probably add input validation at some point.
 
+SCRIPTNAME=`basename $BINARY`
+
+# are we not forcing overwrite?
+if [ -z $FORCE ]; then
+	# check for previously existing script/config files
+	if [ -x /etc/init.d/${SCRIPTNAME} ] || [ -x /etc/conf.d/${SCRIPTNAME} ]; then
+		echo "Start/stop scipt /etc/init.d/${SCRIPTNAME} or config file /etc/conf.d/${SCRIPTNAME} already exist - Aborting, no changes written."
+		echo "User the -f flag to force overwriting the current start/stop script and config file - use with caution."
+		exit 1
+	fi
+fi
+
 if [ -z $NAME ]; then
 	NAME=`basename $BINARY`
 fi
@@ -151,8 +171,6 @@ fi
 if [ -z $DESCRIPTION ]; then
 	DESCRIPTION=$NAME
 fi
-
-SCRIPTNAME=`basename $BINARY`
 
 # write init info header
 envsubst << 'EOF' > /etc/init.d/${SCRIPTNAME}
@@ -171,12 +189,14 @@ envsubst << 'EOF' > /etc/init.d/${SCRIPTNAME}
 EOF
 
 # copy template into place
+# paths are wrong, fix later
 cat template.startstop >> /etc/init.d/${SCRIPTNAME}
 
 # set executable
 chmod +x /etc/init.d/${SCRIPTNAME}
 
 # write config file
+# paths are wrong, fix later
 envsubst < template.conf >> /etc/conf.d/${SCRIPTNAME}.conf
 
 # add to default runlevels if -e

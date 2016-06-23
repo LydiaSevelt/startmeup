@@ -16,3 +16,4 @@ creating a config file in /etc/conf.d/
 - update function - read from config
 - update-rc.d integration
 - man page
+- detailed example usage, both for -h and the man page
