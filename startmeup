@@ -1,0 +1,185 @@
+#!/bin/bash
+#
+# Copyright 2016 Lydia Sevelt <LydiaSevelt@gmail.com>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+
+print_help () {
+cat << EOF
+-h  Show this help
+-b  Full path to daemon binary
+
+Everything below here is optional
+Remember to use single quotes to preserve literal strings
+
+-e  Enable newly installed start/stop script in default runlevels
+	Executes "update-rc.d enable" for new script after install
+-n  "Provides" name
+	Default is the binary name
+-c  Full path to config file
+-p  Full path to pidfile if the daemon creates one
+-r  Special reload command if daemon does not accept HUP signal
+-o  Command line arguments to pass to binary when executing
+-E  Short description of daemon
+-s  Startup runlevels
+	Default is '3 4 5'
+-S  Stop runlevels
+	Default is '0 1 6'
+-d  Should start services
+-D  Should stop services
+-q  Required startup services
+	Remember to use single quotes to preserve the literal string
+	Default is '\$network \$local_fs \$remote_fs'
+-Q  Required shutdown services
+	Remember to use single quotes to preserve the literal string
+	Default is '\$network \$local_fs \$remote_fs'
+
+-U  Full path to daemon binary - Update
+	Some config file changes require running update to push
+	changes to the init script
+EOF
+}
+
+# set defaults
+export BINARY=""
+export NAME=""
+export CONFIG=""
+export PIDFILE=""
+export RELOADCMD=""
+export CMDLINEOPTS=""
+export DESCRIPTION=""
+export START_LEVELS="3 4 5"
+export STOP_LEVELS="0 1 6"
+export SHOULD_START=""
+export SHOULD_STOP=""
+export REQ_START='$network $local_fs $remote_fs'
+export REQ_STOP='$network $local_fs $remote_fs'
+ADDONINSTALL=""
+
+while getopts "heb:n:c:p:r:o:E:s:S:q:Q:d:D:" opt; do
+	case "$opt" in
+		h)
+			print_help
+			exit 0
+		;;
+		e)
+			ADDONINSTALL=1
+		;;
+		b)
+			# full path to binary
+			BINARY=$OPTARG
+		;;
+		n)
+			# optional name
+			NAME=$OPTARG
+		;;
+		c)
+			# optional config file
+			CONFIG=$OPTARG
+		;;
+		p)
+			# optional pidfile
+			PIDFILE=$OPTARG
+		;;
+		r)
+			# optional reload command
+			RELOADCMD=$OPTARG
+		;;
+		o)
+			# optional command line options
+			CMDLINEOPTS=$OPTARG
+		;;
+		e)
+			# optional description
+			DESCRIPTION=$OPTARG
+		;;
+		s)
+			# optional startup runlevels
+			START_LEVELS=$OPTARG
+		;;
+		S)
+			# optional stop runlevels
+			STOP_LEVELS=$OPTARG
+		;;
+		d)
+			# optional should start services
+			SHOULD_START=$OPTARG
+		;;
+		D)
+			# optional should stop services
+			SHOULD_STOP=$OPTARG
+		;;
+		q)
+			# optional required startup services
+			REQ_START=$OPTARG
+		;;
+		Q)
+			# optional required shutdown services
+			REQ_STOP=$OPTARG
+		;;
+		'?')
+			print_help
+			exit 1
+		;;
+	esac
+done
+
+if [ -z $BINARY ]; then
+	print_help
+	exit 1
+fi
+
+# I should probably add input validation at some point.
+
+if [ -z $NAME ]; then
+	NAME=`basename $BINARY`
+fi
+
+if [ -z $DESCRIPTION ]; then
+	DESCRIPTION=$NAME
+fi
+
+SCRIPTNAME=`basename $BINARY`
+
+# write init info header
+envsubst << 'EOF' > /etc/init.d/${SCRIPTNAME}
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          ${NAME}
+# Required-Start:    ${REQ_START}
+# Required-Stop:     ${REQ_STOP}
+# Default-Start:     ${START_LEVELS}
+# Default-Stop:      ${STOP_LEVELS}
+# Should-Start:      ${SHOULD_START}
+# Should-Stop:       ${SHOULD_STOP}
+# Short-Description: ${DESCRIPTION}
+### END INIT INFO
+EOF
+
+# copy template into place
+cat template.startstop >> /etc/init.d/${SCRIPTNAME}
+
+# set executable
+chmod +x /etc/init.d/${SCRIPTNAME}
+
+# write config file
+envsubst < template.conf >> /etc/conf.d/${SCRIPTNAME}.conf
+
+# add to default runlevels if -e
+if [ ! -z $ADDONINSTALL ]; then
+	eval update-rc.d enable ${SCRIPTNAME}
+fi

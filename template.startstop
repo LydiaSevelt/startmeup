@@ -1,0 +1,112 @@
+
+# clear conflicting settings from the environment
+unset TMPDIR
+
+. /lib/lsb/init-functions
+
+SCRIPTNAME=`basename $0`
+
+# load config variables for daemon
+. /etc/conf.d/`basename $0`.conf
+
+# See if the daemons are there
+if [ ! -x $BINARY ]; then
+        echo "${BINARY} not found or does not have execute permission"
+        exit 1
+fi
+
+# check for default name
+if [ -z $NAME ]; then
+	NAME=`basename $BINARY`
+fi
+
+# check for optional description
+if [ -z $DESCRIPTION ]; then
+	DESCRIPTION=$NAME
+fi
+
+case $1 in
+	start)
+
+		log_daemon_msg "Starting $DESCRIPTION daemon" $NAME
+		
+		if [ ! -z $PIDFILE ]; then
+			# Daemon creates it's own pidfile which has been provided
+			# Make sure we have a directory for the pid file, even if it's on a tmpfs
+			install -o root -g root -m 755 -d `dirname $PIDFILE`
+		fi
+
+		if ! start-stop-daemon --start --quiet --oknodo --exec $BINARY -- $CMDLINEOPTS; then
+			log_end_msg 1
+			exit 1
+		fi
+
+		log_end_msg 0
+		;;
+
+	stop)
+
+		log_daemon_msg "Stopping $DESCRIPTION daemon" $NAME
+		
+		if [ ! -z $PIDFILE ]; then
+			start-stop-daemon --stop --quiet --pidfile $PIDFILE --retry=0/30/KILL/5
+			# Wait a little and remove stale PID file
+			sleep 1
+			if [ -f $PIDFILE ] && ! ps h `cat $PIDFILE` > /dev/null
+			then
+				# Stale PID file, remove it
+				rm -f $PIDFILE
+			fi
+		else
+			# No pid file
+			start-stop-daemon --stop --quiet --retry=0/30/KILL/5 --exec $BINARY
+			
+		fi
+
+		log_end_msg 0
+
+		;;
+
+	reload)
+		log_daemon_msg "Reloading $CONFIG" $NAME
+		
+		if [ ! -z $RELOADCMD ]; then
+			# special reload command for service has been specified, use that instead
+			eval $RELOADCMD
+		elif [ ! -z $PIDFILE ]; then
+			start-stop-daemon --stop --quiet --signal HUP --pidfile $PIDFILE
+		else
+			start-stop-daemon --stop --quiet --signal HUP --exec $BINARY
+		fi
+
+		log_end_msg 0
+		;;
+
+	restart|force-reload)
+		$0 stop
+		sleep 1
+		$0 start
+		;;
+
+        status)
+		if [ ! -z $PIDFILE ]; then
+			status_of_proc -p $PIDFILE $BINARY $NAME
+			exit $?
+		else
+			if pidofproc `basename $BINARY` >/dev/null; then
+				echo "$NAME running"
+				exit 0
+			else
+				echo "$NAME not running"
+				exit 3
+			fi
+		fi
+		;;
+
+	*)
+		echo "Usage: /etc/init.d/$SCRIPTNAME {start|stop|reload|restart|force-reload|status}"
+		exit 1
+		;;
+esac
+
+exit 0
