@@ -3,7 +3,70 @@ Startmeup
 Simple script and templates to add an LSB complient start/stop script to /etc/init.d/ 
 creating a config file in /etc/conf.d/
 
-# TODO
+Usage:
+
+-h  Show this help
+-b  Full path to daemon binary
+
+Everything below here is optional
+Remember to use single quotes to preserve literal strings
+
+-e  Enable newly installed start/stop script in default runlevels
+	Executes "update-rc.d enable" for new script after install
+-f  Force overwrite of existing script/config files
+-U  Full path to daemon binary - Update
+	Some config file changes require running update to push
+	changes to the init script. Also checks templates and will
+	update script and config file if newer versions are available.
+	Updating from templates requires -f
+
+-n  "Provides" name
+	Default is the binary name
+-c  Full path to config file
+-p  Full path to pidfile if the daemon creates one
+-r  Special reload command if daemon does not accept HUP signal
+-o  Command line arguments to pass to binary when executing
+-E  Short description of daemon
+-s  Startup runlevels
+	Default is '3 4 5'
+-S  Stop runlevels
+	Default is '0 1 6'
+-d  Should start services
+-D  Should stop services
+-q  Required startup services
+	Remember to use single quotes to preserve the literal string
+	Default is '$network $local_fs $remote_fs'
+-Q  Required shutdown services
+	Remember to use single quotes to preserve the literal string
+	Default is '$network $local_fs $remote_fs'
+
+Examples:
+
+	For most people the defaults will be sufficient:
+
+startmeup -b /usr/sbin/thingd
+
+	Many people will want to add the new deamon to startup at the same time
+
+startmeup -b /usr/sbin/thingd -e
+
+	Some daemons create a pidfile when they run, use that for added reliability
+
+startmeup -b /usr/sbin/thingd -e -p /var/run/thingd.pid
+
+	Pass some command line options to the daemon and add a short description
+
+startmeup -b /usr/sbin/thingd -e -p /var/run/thingd.pid -o "-v --debug=2 -e" -E "The thingd daemon for things"
+
+	Add additional runtime requirements and only change the default runlevels to start daemon
+	Don't forget the single quotes so that the requirments are treated as literal strings and not interpreted as variables
+
+startmeup -b /usr/sbin/thingd -e -p /var/run/thingd.pid -o "-v --debug=2 -e" -E "The thingd daemon for things" -s "5" -q '$network $local_fs $remote_fs $syslog libvirtd sshd'
+
+
+TODO:
+
+- Testing - validate current template functions as a proper drop in replacement for other start/stop scripts.
 - Fix paths
 - Package up
 - create /etc/conf.d/
