@@ -28,11 +28,10 @@ Remember to use single quotes to preserve literal strings
 -e  Enable newly installed start/stop script in default runlevels
 	Executes "update-rc.d enable" for new script after install
 -f  Force overwrite of existing script/config files
--U  Full path to daemon binary - Update
+-U  Full path to daemon binary or special word "all" - Update
 	Some config file changes require running update to push
 	changes to the init script. Also checks templates and will
 	update script and config file if newer versions are available.
-	Updating from templates requires -f
 
 -n  "Provides" name
 	Default is the binary name
@@ -82,6 +81,57 @@ EOF
 # make these examples a bit neater when being displayed, especially on smaller terminals.
 }
 
+# write out a start/stop script
+write_script () {
+
+	SCRIPTNAME=`basename $BINARY`
+
+	if [ -z $NAME ]; then
+		NAME=`basename $BINARY`
+	fi
+
+	if [ -z "$DESCRIPTION" ]; then
+		DESCRIPTION=$NAME
+	fi
+
+	# write init info header
+	echo $START_LEVELS
+	envsubst << 'EOF' > /etc/init.d/${SCRIPTNAME}
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          ${NAME}
+# Required-Start:    ${REQ_START}
+# Required-Stop:     ${REQ_STOP}
+# Default-Start:     ${START_LEVELS}
+# Default-Stop:      ${STOP_LEVELS}
+# Should-Start:      ${SHOULD_START}
+# Should-Stop:       ${SHOULD_STOP}
+# Short-Description: ${DESCRIPTION}
+### END INIT INFO
+EOF
+
+	# Wouldn't some error checking be cool? Why it certainly would.
+
+	# copy template into place
+	# paths are wrong, fix later
+	cat template.startstop >> /etc/init.d/${SCRIPTNAME}
+
+	# set executable
+	chmod +x /etc/init.d/${SCRIPTNAME}
+
+	# write config file only if not an update
+	# paths are wrong, fix later
+	if [ -z $UPDATES ]; then
+		envsubst < template.conf > /etc/conf.d/${SCRIPTNAME}.conf
+	fi
+
+	# add to default runlevels if -e
+	if [ ! -z $ADDONINSTALL ]; then
+		eval update-rc.d ${SCRIPTNAME} defaults
+	fi
+}
+
 # set defaults
 export BINARY=""
 export NAME=""
@@ -98,8 +148,9 @@ export REQ_START='$network $local_fs $remote_fs'
 export REQ_STOP='$network $local_fs $remote_fs'
 ADDONINSTALL=""
 FORCE=""
+UPDATES=""
 
-while getopts "hfeb:n:c:p:r:o:E:s:S:q:Q:d:D:" opt; do
+while getopts "hfeb:n:c:p:r:o:E:s:S:q:Q:d:D:U:" opt; do
 	case "$opt" in
 		h)
 			print_help
@@ -165,6 +216,10 @@ while getopts "hfeb:n:c:p:r:o:E:s:S:q:Q:d:D:" opt; do
 			# optional required shutdown services
 			REQ_STOP=$OPTARG
 		;;
+		U)
+			# Run update against one or all start/stop scripts
+			UPDATES=$OPTARG
+		;;
 		'?')
 			print_help
 			exit 1
@@ -172,17 +227,16 @@ while getopts "hfeb:n:c:p:r:o:E:s:S:q:Q:d:D:" opt; do
 	esac
 done
 
-if [ -z $BINARY ]; then
+if [ -z $BINARY ] && [ -z $UPDATES ]; then
 	print_help
 	exit 1
 fi
 
 # I should probably add input validation at some point, or at least error checking.
 
-SCRIPTNAME=`basename $BINARY`
-
-# are we not forcing overwrite?
-if [ -z $FORCE ]; then
+# are we not forcing overwrite or is it an update?
+if [ -z $FORCE ] && [ -z $UPDATES ]; then
+	SCRIPTNAME=`basename $BINARY`
 	# check for previously existing script/config files
 	if [ -x /etc/init.d/${SCRIPTNAME} ] || [ -x /etc/conf.d/${SCRIPTNAME} ]; then
 		echo "Start/stop scipt /etc/init.d/${SCRIPTNAME} or config file /etc/conf.d/${SCRIPTNAME} already exist - Aborting, no changes written."
@@ -191,44 +245,24 @@ if [ -z $FORCE ]; then
 	fi
 fi
 
-if [ -z $NAME ]; then
-	NAME=`basename $BINARY`
+if [ -z $UPDATES ]; then
+	# not an update
+	write_script
+else
+	# updating
+	if [ "$UPDATES" == "all" ]; then
+		# update all scripts with config files in /etc/conf.d/
+		for cfgfile in $(ls /etc/conf.d/*.conf); do
+			. $cfgfile
+			echo "Updating $NAME"
+			write_script
+		done
+	else
+		# source config file
+		. /etc/conf.d/`basename $UPDATES`.conf
+		echo $START_LEVELS
+		write_script
+	fi
 fi
 
-if [ -z "$DESCRIPTION" ]; then
-	DESCRIPTION=$NAME
-fi
 
-# write init info header
-envsubst << 'EOF' > /etc/init.d/${SCRIPTNAME}
-#!/bin/sh
-
-### BEGIN INIT INFO
-# Provides:          ${NAME}
-# Required-Start:    ${REQ_START}
-# Required-Stop:     ${REQ_STOP}
-# Default-Start:     ${START_LEVELS}
-# Default-Stop:      ${STOP_LEVELS}
-# Should-Start:      ${SHOULD_START}
-# Should-Stop:       ${SHOULD_STOP}
-# Short-Description: ${DESCRIPTION}
-### END INIT INFO
-EOF
-
-# Wouldn't some error checking be cool? Why it certainly would.
-
-# copy template into place
-# paths are wrong, fix later
-cat template.startstop >> /etc/init.d/${SCRIPTNAME}
-
-# set executable
-chmod +x /etc/init.d/${SCRIPTNAME}
-
-# write config file
-# paths are wrong, fix later
-envsubst < template.conf >> /etc/conf.d/${SCRIPTNAME}.conf
-
-# add to default runlevels if -e
-if [ ! -z $ADDONINSTALL ]; then
-	eval update-rc.d ${SCRIPTNAME} defaults
-fi

@@ -67,12 +67,13 @@ startmeup -b /usr/sbin/thingd -e -p /var/run/thingd.pid -o "-v --debug=2 -e" -E 
 TODO:
 
 - Testing - validate current template functions as a proper drop in replacement for other start/stop scripts.
+- More testing of Update function required
+- Add check function to see if files need updating
 - Fix paths
 - Package up
 - create /etc/conf.d/
 - improve start/stop script template
 - Additional insserv integration, view start order, etc
 - support --make-pidfile properly
-- update function - read from config - check for changes before updating
 - man page
 - detailed example usage, both for -h and the man page

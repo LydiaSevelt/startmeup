@@ -1,5 +1,5 @@
 
-# clear conflicting settings from the environment
+# clear conflicting settings from the environment 1
 unset TMPDIR
 
 . /lib/lsb/init-functions
@@ -59,7 +59,7 @@ case $1 in
 			fi
 		else
 			# No pid file
-			start-stop-daemon --stop --quiet --retry=0/30/KILL/5 --exec $BINARY
+			start-stop-daemon --stop --quiet --exec $BINARY
 			
 		fi
 
