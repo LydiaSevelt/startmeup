@@ -1,5 +1,5 @@
 
-# clear conflicting settings from the environment 1
+# clear conflicting settings from the environment
 unset TMPDIR
 
 . /lib/lsb/init-functions
