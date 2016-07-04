@@ -195,7 +195,7 @@ if [ -z $NAME ]; then
 	NAME=`basename $BINARY`
 fi
 
-if [ -z $DESCRIPTION ]; then
+if [ -z "$DESCRIPTION" ]; then
 	DESCRIPTION=$NAME
 fi
 

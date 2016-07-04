@@ -21,7 +21,7 @@ if [ -z $NAME ]; then
 fi
 
 # check for optional description
-if [ -z $DESCRIPTION ]; then
+if [ -z "$DESCRIPTION" ]; then
 	DESCRIPTION=$NAME
 fi
 
@@ -49,7 +49,7 @@ case $1 in
 		log_daemon_msg "Stopping $DESCRIPTION daemon" $NAME
 		
 		if [ ! -z $PIDFILE ]; then
-			start-stop-daemon --stop --quiet --pidfile $PIDFILE --retry=0/30/KILL/5
+			start-stop-daemon --stop --quiet --pidfile $PIDFILE
 			# Wait a little and remove stale PID file
 			sleep 1
 			if [ -f $PIDFILE ] && ! ps h `cat $PIDFILE` > /dev/null
