@@ -263,6 +263,8 @@ else
 		echo $START_LEVELS
 		write_script
 	fi
+	# run insserv at the end to update dependency information
+	insserv
 fi
 
 
