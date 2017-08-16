@@ -252,7 +252,7 @@ else
 	# updating
 	if [ "$UPDATES" == "all" ]; then
 		# update all scripts with config files in /etc/conf.d/
-		for cfgfile in "$(ls /etc/conf.d/*.conf)"; do
+		for cfgfile in "/etc/conf.d/*.conf"; do
 			. "$cfgfile"
 			printf "Updating $NAME\n"
 			write_script
