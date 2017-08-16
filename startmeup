@@ -95,7 +95,7 @@ write_script () {
 	fi
 
 	# write init info header
-	echo $START_LEVELS
+	printf "%s\n" $START_LEVELS
 	envsubst << 'EOF' > /etc/init.d/${SCRIPTNAME}
 #!/bin/sh
 
@@ -239,8 +239,8 @@ if [ -z $FORCE ] && [ -z $UPDATES ]; then
 	SCRIPTNAME=`basename $BINARY`
 	# check for previously existing script/config files
 	if [ -x /etc/init.d/${SCRIPTNAME} ] || [ -x /etc/conf.d/${SCRIPTNAME} ]; then
-		echo "Start/stop scipt /etc/init.d/${SCRIPTNAME} or config file /etc/conf.d/${SCRIPTNAME} already exist - Aborting, no changes written."
-		echo "User the -f flag to force overwriting the current start/stop script and config file - use with caution."
+		printf "Start/stop scipt /etc/init.d/${SCRIPTNAME} or config file /etc/conf.d/${SCRIPTNAME} already exist - Aborting, no changes written.\n"
+		printf "User the -f flag to force overwriting the current start/stop script and config file - use with caution.\n"
 		exit 1
 	fi
 fi
@@ -254,13 +254,13 @@ else
 		# update all scripts with config files in /etc/conf.d/
 		for cfgfile in $(ls /etc/conf.d/*.conf); do
 			. $cfgfile
-			echo "Updating $NAME"
+			printf "Updating $NAME\n"
 			write_script
 		done
 	else
 		# source config file
 		. /etc/conf.d/`basename $UPDATES`.conf
-		echo $START_LEVELS
+		printf "%s\n" $START_LEVELS
 		write_script
 	fi
 	# run insserv at the end to update dependency information
