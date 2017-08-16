@@ -84,10 +84,10 @@ EOF
 # write out a start/stop script
 write_script () {
 
-	SCRIPTNAME=`basename $BINARY`
+	SCRIPTNAME=$(basename $BINARY)
 
 	if [ -z $NAME ]; then
-		NAME=`basename $BINARY`
+		NAME=$(basename $BINARY)
 	fi
 
 	if [ -z "$DESCRIPTION" ]; then
@@ -236,7 +236,7 @@ fi
 
 # are we not forcing overwrite or is it an update?
 if [ -z $FORCE ] && [ -z $UPDATES ]; then
-	SCRIPTNAME=`basename $BINARY`
+	SCRIPTNAME=$(basename $BINARY)
 	# check for previously existing script/config files
 	if [ -x /etc/init.d/${SCRIPTNAME} ] || [ -x /etc/conf.d/${SCRIPTNAME} ]; then
 		printf "Start/stop scipt /etc/init.d/${SCRIPTNAME} or config file /etc/conf.d/${SCRIPTNAME} already exist - Aborting, no changes written.\n"
@@ -259,7 +259,7 @@ else
 		done
 	else
 		# source config file
-		. /etc/conf.d/`basename $UPDATES`.conf
+		. /etc/conf.d/$(basename $UPDATES).conf
 		printf "%s\n" $START_LEVELS
 		write_script
 	fi
