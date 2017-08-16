@@ -84,19 +84,19 @@ EOF
 # write out a start/stop script
 write_script () {
 
-	SCRIPTNAME=$(basename $BINARY)
+	SCRIPTNAME="$(basename $BINARY)"
 
-	if [ -z $NAME ]; then
-		NAME=$(basename $BINARY)
+	if [ -z "$NAME" ]; then
+		NAME="$(basename $BINARY)"
 	fi
 
 	if [ -z "$DESCRIPTION" ]; then
-		DESCRIPTION=$NAME
+		DESCRIPTION="$NAME"
 	fi
 
 	# write init info header
-	printf "%s\n" $START_LEVELS
-	envsubst << 'EOF' > /etc/init.d/${SCRIPTNAME}
+	printf "%s\n" "$START_LEVELS"
+	envsubst << 'EOF' > "/etc/init.d/${SCRIPTNAME}"
 #!/bin/sh
 
 ### BEGIN INIT INFO
@@ -115,20 +115,20 @@ EOF
 
 	# copy template into place
 	# paths are wrong, fix later
-	cat template.startstop >> /etc/init.d/${SCRIPTNAME}
+	cat template.startstop >> "/etc/init.d/${SCRIPTNAME}"
 
 	# set executable
-	chmod +x /etc/init.d/${SCRIPTNAME}
+	chmod +x "/etc/init.d/${SCRIPTNAME}"
 
 	# write config file only if not an update
 	# paths are wrong, fix later
-	if [ -z $UPDATES ]; then
-		envsubst < template.conf > /etc/conf.d/${SCRIPTNAME}.conf
+	if [ -z "$UPDATES" ]; then
+		envsubst < template.conf > "/etc/conf.d/${SCRIPTNAME}.conf"
 	fi
 
 	# add to default runlevels if -e
-	if [ ! -z $ADDONINSTALL ]; then
-		eval update-rc.d ${SCRIPTNAME} defaults
+	if [ ! -z "$ADDONINSTALL" ]; then
+		eval update-rc.d "${SCRIPTNAME}" defaults
 	fi
 }
 
@@ -166,59 +166,59 @@ while getopts "hfeb:n:c:p:r:o:E:s:S:q:Q:d:D:U:" opt; do
 		;;
 		b)
 			# full path to binary
-			BINARY=$OPTARG
+			BINARY="$OPTARG"
 		;;
 		n)
 			# optional name
-			NAME=$OPTARG
+			NAME="$OPTARG"
 		;;
 		c)
 			# optional config file
-			CONFIG=$OPTARG
+			CONFIG="$OPTARG"
 		;;
 		p)
 			# optional pidfile
-			PIDFILE=$OPTARG
+			PIDFILE="$OPTARG"
 		;;
 		r)
 			# optional reload command
-			RELOADCMD=$OPTARG
+			RELOADCMD="$OPTARG"
 		;;
 		o)
 			# optional command line options
-			CMDLINEOPTS=$OPTARG
+			CMDLINEOPTS="$OPTARG"
 		;;
 		E)
 			# optional description
-			DESCRIPTION=$OPTARG
+			DESCRIPTION="$OPTARG"
 		;;
 		s)
 			# optional startup runlevels
-			START_LEVELS=$OPTARG
+			START_LEVELS="$OPTARG"
 		;;
 		S)
 			# optional stop runlevels
-			STOP_LEVELS=$OPTARG
+			STOP_LEVELS="$OPTARG"
 		;;
 		d)
 			# optional should start services
-			SHOULD_START=$OPTARG
+			SHOULD_START="$OPTARG"
 		;;
 		D)
 			# optional should stop services
-			SHOULD_STOP=$OPTARG
+			SHOULD_STOP="$OPTARG"
 		;;
 		q)
 			# optional required startup services
-			REQ_START=$OPTARG
+			REQ_START="$OPTARG"
 		;;
 		Q)
 			# optional required shutdown services
-			REQ_STOP=$OPTARG
+			REQ_STOP="$OPTARG"
 		;;
 		U)
 			# Run update against one or all start/stop scripts
-			UPDATES=$OPTARG
+			UPDATES="$OPTARG"
 		;;
 		'?')
 			print_help
@@ -227,7 +227,7 @@ while getopts "hfeb:n:c:p:r:o:E:s:S:q:Q:d:D:U:" opt; do
 	esac
 done
 
-if [ -z $BINARY ] && [ -z $UPDATES ]; then
+if [ -z "$BINARY" ] && [ -z "$UPDATES" ]; then
 	print_help
 	exit 1
 fi
@@ -235,32 +235,32 @@ fi
 # I should probably add input validation at some point, or at least error checking.
 
 # are we not forcing overwrite or is it an update?
-if [ -z $FORCE ] && [ -z $UPDATES ]; then
-	SCRIPTNAME=$(basename $BINARY)
+if [ -z "$FORCE" ] && [ -z "$UPDATES" ]; then
+	SCRIPTNAME="$(basename $BINARY)"
 	# check for previously existing script/config files
-	if [ -x /etc/init.d/${SCRIPTNAME} ] || [ -x /etc/conf.d/${SCRIPTNAME} ]; then
+	if [ -x "/etc/init.d/${SCRIPTNAME}" ] || [ -x "/etc/conf.d/${SCRIPTNAME}" ]; then
 		printf "Start/stop scipt /etc/init.d/${SCRIPTNAME} or config file /etc/conf.d/${SCRIPTNAME} already exist - Aborting, no changes written.\n"
 		printf "User the -f flag to force overwriting the current start/stop script and config file - use with caution.\n"
 		exit 1
 	fi
 fi
 
-if [ -z $UPDATES ]; then
+if [ -z "$UPDATES" ]; then
 	# not an update
 	write_script
 else
 	# updating
 	if [ "$UPDATES" == "all" ]; then
 		# update all scripts with config files in /etc/conf.d/
-		for cfgfile in $(ls /etc/conf.d/*.conf); do
-			. $cfgfile
+		for cfgfile in "$(ls /etc/conf.d/*.conf)"; do
+			. "$cfgfile"
 			printf "Updating $NAME\n"
 			write_script
 		done
 	else
 		# source config file
-		. /etc/conf.d/$(basename $UPDATES).conf
-		printf "%s\n" $START_LEVELS
+		. "/etc/conf.d/$(basename $UPDATES).conf"
+		printf "%s\n" "$START_LEVELS"
 		write_script
 	fi
 	# run insserv at the end to update dependency information
